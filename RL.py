@@ -51,7 +51,7 @@ class RL:
             optimize_cuda_cache=True,
             # clip_range=0.2
         )
-        
+        self.ppo_config.clip_range = 0.2  
         self.generation_kwargs = {
             "max_new_tokens": max_new_tokens,
             "do_sample": True,
@@ -74,12 +74,8 @@ class RL:
     def print_gpu_memory(self):
             """Print GPU memory usage stats."""
             if torch.cuda.is_available():
-                allocated = torch.cuda.memory_allocated() / 1024**2
-                reserved = torch.cuda.memory_reserved() / 1024**2
-                print(f"GPU Memory: {allocated:.2f}MB allocated, {reserved:.2f}MB reserved")
-                return {"allocated_mb": allocated, "reserved_mb": reserved}
-            return {"allocated_mb": 0, "reserved_mb": 0}
-        
+                print(f"GPU Memory: {torch.cuda.memory_allocated() / 1024**2:.2f}MB allocated, {torch.cuda.memory_reserved() / 1024**2:.2f}MB reserved")
+                
     def clear_memory(self):
         """Clear memory to avoid OOM errors."""
         gc.collect()
@@ -100,8 +96,8 @@ class RL:
         print("Loading reward model...")
         self.reward_model = CrossEncoder(self.reward_model_name)
         
-        self.generation_kwargs["pad_token_id"] = self.tokenizer.pad_token_id
-        self.generation_kwargs["eos_token_id"] = self.tokenizer.eos_token_id
+        # self.generation_kwargs["pad_token_id"] = self.tokenizer.pad_token_id
+        # self.generation_kwargs["eos_token_id"] = self.tokenizer.eos_token_id
         print("All models loaded successfully")
         
     def load_dataset(self):
@@ -185,7 +181,7 @@ class RL:
             "epoch": epoch,
             "avg_reward": avg_reward,
             "timestamp": time.strftime("%Y-%m-%d-%H-%M-%S"),
-            "gpu_memory": self.print_gpu_memory()
+            # "gpu_memory": self.print_gpu_memory()
         }
         
         self.checkpoint_stats.append(metadata)
@@ -223,7 +219,8 @@ class RL:
             try:
                 # Print epoch info
                 print(f"\n======= Epoch {epoch} =======")
-                mem_info = self.print_gpu_memory()
+                self.print_gpu_memory()
+                # mem_info = self.print_gpu_memory()
                 current_device = self.ppo_trainer.accelerator.device
                 
                 # Move batch to device
@@ -241,7 +238,6 @@ class RL:
                     
                     query_tensors.append(sample_input.squeeze(0).detach().clone())
                     
-                    # Generate response
                     output = self.ppo_trainer.model.generate(
                         sample_input,
                         attention_mask=sample_mask,
@@ -300,7 +296,6 @@ class RL:
                 if epoch % self.checkpoint_interval == 0 and epoch > 0:
                     self.save_checkpoint(epoch, avg_reward)
                 
-                # Cleanup to avoid memory leaks
                 del input_ids, attention_mask, query_tensors, response_tensors
                 self.clear_memory()
                 
