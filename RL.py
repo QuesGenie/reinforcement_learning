@@ -193,7 +193,7 @@ class RL:
         print(f"Checkpoint saved at epoch {epoch} with avg reward: {avg_reward:.4f}")
     
     def run_training(self, num_epochs=None):
-        """Run the full training loop with automatic checkpointing and evaluation."""
+        """Run the full training loop with automatic checkpointing"""
         self.load_models()
         self.load_dataset()
         self.init_trainer()
@@ -217,7 +217,6 @@ class RL:
             epoch_rewards = []
             
             try:
-                # Print epoch info
                 print(f"\n======= Epoch {epoch} =======")
                 self.print_gpu_memory()
                 # mem_info = self.print_gpu_memory()
@@ -311,17 +310,15 @@ class RL:
         
         progress_bar.close()
         
-        # Save final model
         final_checkpoint_path = os.path.join(self.output_dir, "final_model")
         self.ppo_trainer.model.save_pretrained(final_checkpoint_path)
         self.tokenizer.save_pretrained(final_checkpoint_path)
         
-        # Save training stats
         self.save_training_stats()
         
-        # Run final evaluation
-        print("Running final evaluation...")
-        self.evaluate_model()
+        # evaluation
+        # print("Running final evaluation...")
+        # self.evaluate_model()
         
         print(f"Training completed in {(time.time() - start_time) / 60:.2f} minutes")
         
@@ -444,7 +441,7 @@ class RL:
         print("\nBest Improvement Examples:")
         for i, example in enumerate(sorted(best_improvements, key=lambda x: x['improvement'], reverse=True)[:5]):
             print(f"\nExample {i+1}:")
-            print(f"Context: {example['context'][:200]}...")
+            print(f"Context: {example['context'][:300]}...")
             print(f"Reference: {example['ref_question']}")
             print(f"Improved: {example['trained_question']}")
             print(f"Improvement: {example['improvement']:.4f}")
