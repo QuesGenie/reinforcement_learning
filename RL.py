@@ -328,45 +328,6 @@ class RL:
         stats_df = pd.DataFrame(self.stats)
         stats_df.to_csv(os.path.join(self.output_dir, "training_stats.csv"), index=False)
         
-        # Generate plots
-        self.generate_training_plots()
-    
-    def generate_training_plots(self):
-        """Generate training progress plots."""
-        # Create figure with subplots
-        fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-        
-        # Plot average rewards
-        axes[0, 0].plot(self.stats["epoch"], self.stats["avg_reward"])
-        axes[0, 0].set_title("Average Reward vs. Epoch")
-        axes[0, 0].set_xlabel("Epoch")
-        axes[0, 0].set_ylabel("Average Reward")
-        axes[0, 0].grid(True)
-        
-        # Plot policy loss
-        axes[0, 1].plot(self.stats["epoch"], self.stats["policy_loss"])
-        axes[0, 1].set_title("Policy Loss vs. Epoch")
-        axes[0, 1].set_xlabel("Epoch")
-        axes[0, 1].set_ylabel("Policy Loss")
-        axes[0, 1].grid(True)
-        
-        # Plot value loss
-        axes[1, 0].plot(self.stats["epoch"], self.stats["value_loss"])
-        axes[1, 0].set_title("Value Loss vs. Epoch")
-        axes[1, 0].set_xlabel("Epoch")
-        axes[1, 0].set_ylabel("Value Loss")
-        axes[1, 0].grid(True)
-        
-        # Plot time
-        axes[1, 1].plot(self.stats["epoch"], self.stats["elapsed_time"])
-        axes[1, 1].set_title("Training Time vs. Epoch")
-        axes[1, 1].set_xlabel("Epoch")
-        axes[1, 1].set_ylabel("Elapsed Time (s)")
-        axes[1, 1].grid(True)
-        
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, "training_plots.png"))
-        
     def evaluate_model(self, num_samples=None):
         """Evaluate the model against the reference model."""
         print("Evaluating model...")
