@@ -100,7 +100,7 @@ class RL:
         # self.generation_kwargs["eos_token_id"] = self.tokenizer.eos_token_id
         print("All models loaded successfully")
         
-    def load_dataset(self):
+    def load_data(self):
         """Load and prepare dataset."""
         print(f"Loading {self.dataset_name} dataset (limit: {self.limit_dataset})...")
         dataset = load_dataset(self.dataset_name)
@@ -195,7 +195,7 @@ class RL:
     def run_training(self, num_epochs=None):
         """Run the full training loop with automatic checkpointing"""
         self.load_models()
-        self.load_dataset()
+        self.load_data()
         self.init_trainer()
         
         print("Starting training...")
