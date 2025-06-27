@@ -5,11 +5,12 @@ import time
 import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
-from datasets import load_dataset
+from datasets import Dataset,load_dataset
 from transformers import AutoTokenizer
 # trl version is 0.11.3
 from trl import PPOConfig, PPOTrainer, AutoModelForSeq2SeqLMWithValueHead
 from sentence_transformers import CrossEncoder
+import json
 
 class RL:
     def __init__(
@@ -17,6 +18,7 @@ class RL:
         model_name="fares7elsadek/t5-base-finetuned-question-generation",
         reward_model_name="cross-encoder/qnli-distilroberta-base",
         dataset_name="squad",
+        dataset_jsonpath=None,
         output_dir="./rlhf_output",
         batch_size=4,
         mini_batch_size=2,
@@ -26,7 +28,7 @@ class RL:
         checkpoint_interval=100,
         evaluation_samples=50,
         log_interval=10,
-        limit_dataset=10000,
+        limit_dataset=None,
     ):
         self.model_name = model_name
         self.reward_model_name = reward_model_name
@@ -38,6 +40,7 @@ class RL:
         self.log_interval = log_interval
         self.limit_dataset = limit_dataset
         self.max_seq_length = max_seq_length
+        self.json_path = dataset_jsonpath
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -107,7 +110,28 @@ class RL:
         self.train_dataset = dataset['train'].shuffle(seed=42).select(range(self.limit_dataset))
         self.train_dataset = self.train_dataset.map(self.tokenize_sample, batched=False)
         print(f"Dataset prepared with {len(self.train_dataset)} samples")
+
+    
+    def load_json_data(self):
+        print(f"Loading dataset from {self.json_path} (limit: {self.limit_dataset})...")
         
+        with open(self.json_path, 'r', encoding='utf-8') as f:
+            raw_json = json.load(f)
+
+        # data = raw_json.get('result', [])
+        data = [item for item in raw_json.get('result', []) if item['context'] is not None]
+        if not data:
+            raise ValueError("No samples with non-null context found in the dataset.")
+        dataset = Dataset.from_list(data)
+        if self.limit_dataset is None:
+            self.limit_dataset = len(dataset)
+        self.train_dataset = dataset.shuffle(seed=42).select(range(self.limit_dataset))
+
+        self.train_dataset = self.train_dataset.map(self.tokenize_sample, batched=False)
+        
+        print(f"Dataset prepared with {len(self.train_dataset)} samples")
+
+
     def tokenize_sample(self, sample):
         """Tokenize a single sample."""
         context = sample["context"]
@@ -195,7 +219,15 @@ class RL:
     def run_training(self, num_epochs=None):
         """Run the full training loop with automatic checkpointing"""
         self.load_models()
-        self.load_data()
+        if self.json_path is not None:
+            self.load_json_data()
+        elif self.dataset_name is not None:        
+          self.load_data()
+        else:
+            print("dataset_name and json_path is None")
+            raise Exception("dataset_name and json_path is None")
+
+
         self.init_trainer()
         
         print("Starting training...")
